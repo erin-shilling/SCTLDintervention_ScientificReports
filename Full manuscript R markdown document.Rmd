@@ -26,8 +26,6 @@ Time points
 "TP5" refers to the fifth follow-up event that occurred 23 weeks after initial interventions.
 "TP6" refers to the sixth follow-up event that occurred 46 weeks after initial interventions.
 
-Explain time points, length between them, dates, how I named them
-
 If you have any issues or questions about the code please feel free to send an email to eshilling15@gmail.com.
 
 ```{r, loading required packages and datasets}
