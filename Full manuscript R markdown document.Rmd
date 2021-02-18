@@ -1,0 +1,387 @@
+---
+title: "Assessing the effectiveness of two intervention methods for stony coral tissue loss disease on *Montastraea cavernosa*"
+author: "Erin Shilling -- eshilling15@gmail.com, Ian Combs -- combsi9892@gmail.com, and Dr. Joshua D. Voss -- jvoss2@fau.edu "
+date: "2/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+***
+# About this document
+***
+All analyses were performed in R version 3.5.2. This is the code that accompanies the publication XXX. Here you will find all the code to repeat the statistical analyses performed in R for the manuscript.
+
+Naming conventions: 
+Treatment groups
+"Chlorine" & "Chl" both refer to the chlorinated epoxy treatment. "Amoxicillin" & "Amox" refer to the Base 2B plus amoxicillin treatment. "Untreated" & "Untr" refer to the SCTLD-affected, untreated control group.
+Time points
+"TP0" refers to the initial experiment set up, with "Immediately before treatment" & "Pre" referring to the chlorine and amoxicillin treated colonies before treatment at experiment setup, and "Immediately after treatment" and "Post" referring to the chlorine and amoxicillin treated colonies right after treatment at experiment setup. Untreated controls were also included in this "Immediately after treatment" & "P
+
+Explain time points, length between them, dates, how I named them
+
+If you have any issues or questions about the code please feel free to send an email to eshilling15@gmail.com.
+
+```{r, loading required packages and datasets}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(Rmisc, psych, tidyverse, rstatix, FSA)
+
+Intervention.Data <- read.csv("https://raw.githubusercontent.com/erin-shilling/SCTLDintervention_ScientificReports/main/Intervention.Data.csv")
+```
+
+```{r, subsetting data}
+
+#R doesn't automatically recognize as numeric due to NAs
+Intervention.Data$Initial.Colony.Area <- as.numeric(as.character(Intervention.Data$Initial.Colony.Area))
+Intervention.Data$Initial.TP0.Lesions <- as.numeric(as.integer(Intervention.Data$Initial.TP0.Lesions))
+
+#make dataframe excluding TP0
+Intervention.Data.NoTP0 <- Intervention.Data[which(Intervention.Data$Time.Point.Num>0, ), ]
+
+#make data frame without colony 161
+Intervention.Data.No161 <- Intervention.Data[which(Intervention.Data$Colony.ID!=161, ), ]
+
+#make data frame without colonies that died through course of experiment
+Intervention.Data.No.Dead <- Intervention.Data.NoTP0[which(Intervention.Data.NoTP0$Current.Health.Status!= "Dead", ), ]
+
+#subset by time point
+TP1<-Intervention.Data[Intervention.Data$Time.Point=="First followup", ]
+TP2<-Intervention.Data[Intervention.Data$Time.Point=="Second followup", ]
+TP3<-Intervention.Data[Intervention.Data$Time.Point=="Third followup", ]
+TP4<-Intervention.Data[Intervention.Data$Time.Point=="Fourth followup", ]
+TP5<-Intervention.Data[Intervention.Data$Time.Point=="Fifth followup", ]
+TP6<-Intervention.Data[Intervention.Data$Time.Point=="Sixth followup", ]
+
+#no dead colonies included
+TP6.No.Dead<-Intervention.Data.No.Dead[Intervention.Data.No.Dead$Time.Point=="Sixth followup", ]
+
+#subset dataframe without TP0 by treatment
+Amox.NoTP0 <- Intervention.Data.NoTP0[Intervention.Data.NoTP0$Treatment=="Amoxicillin", ]
+Chl.NoTP0 <- Intervention.Data.NoTP0[Intervention.Data.NoTP0$Treatment=="Chlorine", ]
+Untr.NoTP0 <- Intervention.Data.NoTP0[Intervention.Data.NoTP0$Treatment=="Untreated", ]
+
+```
+
+```{r, summarizing data sets}
+
+##initial surface area data
+describe(Intervention.Data$Initial.Colony.Area)
+
+```
+
+```{r, assessing normality}
+#initial colony size data
+##time point used doesn't matter since it's just initial colony area
+
+shapiro.test(TP6$Initial.Colony.Area)
+TP6 %>% group_by(Treatment) %>% shapiro_test(Initial.Colony.Area)
+#only one treatment of the 3 is normal, transformations unsuccessful
+
+#total lesions at 46 weeks by site
+TP6 %>% group_by(Site) %>% shapiro_test(Total.current.lesions)
+#none are normal
+
+#cumulative new lesions at 46 weeks by site
+TP6 %>% group_by(Site) %>% shapiro_test(Cumulative.New.Lesions)
+#none are normal
+
+#New lesions developed at each time point, by treatment
+##For time points 3 and 6, some treatment groups had no new lesions at all, so a shapiro test by group was not possible
+TP1 %>% group_by(Treatment) %>% shapiro_test(New.Lesions)
+TP2 %>% group_by(Treatment) %>% shapiro_test(New.Lesions)
+shapiro_test(TP3$New.Lesions)
+TP4 %>% group_by(Treatment) %>% shapiro_test(New.Lesions)
+TP5 %>% group_by(Treatment) %>% shapiro_test(New.Lesions)
+shapiro.test(TP6$New.Lesions)
+```
+
+```{r, Kruskal-Wallis: initial colony surface area differences across treatment groups}
+
+kruskal.test(TP6$Initial.Colony.Area~TP6$Treatment)
+
+```
+
+No significant difference in mean initial colony area across treatment groups at start of experiment
+
+```{r, Kruskal-Wallis: initial colony surface area differences across sites}
+
+kruskal.test(TP6$Initial.Colony.Area~TP6$Site)
+```
+
+No significant difference in mean initial colony area across sites at start of experiment
+
+```{r, Kruskal-Wallis: initial colony surface influence on TP6 SCTLD status of colonies}
+
+kruskal.test(TP6$Initial.Colony.Area~TP6$Current.Health.Status)
+
+##by treatment group
+
+TP6 %>% group_by(Treatment) %>% kruskal_test(Initial.Colony.Area~Current.Health.Status)
+```
+
+No significant difference in mean initial colony areas of colonies when broken up by SCTLD status at TP6
+
+```{r, Kruskal-Wallis: site influence on total lesions at 46 weeks}
+
+kruskal.test(TP6.No.Dead$Total.current.lesions~TP6.No.Dead$Site)
+```
+
+No significant difference between mean total number of lesions present on colonies across sites
+
+```{r, Kruskal-Wallis: site influence on cumulative new lesions at 46 weeks}
+
+kruskal.test(TP6.No.Dead$Cumulative.New.Lesions~TP6.No.Dead$Site)
+```
+
+No significant difference between mean cumulative new lesions developed on colonies by 46 weeks across sites
+
+```{r, Kruskal-Wallis: treatment influence on new lesions developed between each time point}
+
+Intervention.Data.No.Dead %>% group_by(Time.Point.Num) %>% kruskal_test(New.Lesions~Treatment)
+
+```
+
+No influence of treatment on development of new lesions at any time point
+
+```{r, Kruskal-Wallis: treatment influence on cumulative new lesions at 46 weeks}
+
+kruskal.test(TP6.No.Dead$Cumulative.New.Lesions~TP6.No.Dead$Treatment)
+```
+
+No impact of treatment on cumulative new lesions developed by 46 weeks
+
+```{r, Kruskal-Wallis: differences in number of initial lesions on colonies across sites}
+
+kruskal.test(TP1$Initial.TP0.Lesions~TP1$Site)
+```
+
+No difference in mean number of initial lesions present on colonies across sites
+
+```{r, Kruskal-Wallis: differences in number of initial lesions on colonies across treatment groups}
+
+kruskal.test(TP1$Initial.TP0.Lesions~TP1$Treatment)
+```
+
+No difference in mean number of initial lesions present on colonies across treatment groups
+
+```{r, Fisher Test: site influence on SCTLD status of colonies at any time point}
+
+#TP1
+##get counts
+TP1 %>% count(Site, Current.Health.Status)
+##make table
+TP1.status.site <- as.table(rbind(c(9, 4, 9), c(7, 0, 3)))
+dimnames(TP1.status.site) <- list(Quiesced = c("No", "Yes"),Site = c("BC1", "FTL4", "T328"))
+
+##run test
+fisher_test(TP1.status.site)
+
+#TP2
+TP2 %>% count(Site, Current.Health.Status)
+TP2.status.site <- as.table(rbind(c(9, 4, 10), c(7, 0, 2)))
+dimnames(TP2.status.site) <- list(Quiesced = c("No", "Yes"),Site = c("BC1", "FTL4", "T328"))
+
+fisher_test(TP2.status.site)
+
+#TP3
+TP3 %>% count(Site, Current.Health.Status)
+TP3.status.site <- as.table(rbind(c(10, 4, 11), c(6, 0, 1)))
+dimnames(TP3.status.site) <- list(Quiesced = c("No", "Yes"),Site = c("BC1", "FTL4", "T328"))
+
+fisher_test(TP3.status.site)
+
+#TP4
+TP4 %>% count(Site, Current.Health.Status)
+TP4.status.site <- as.table(rbind(c(9, 4, 11), c(7, 0, 1)))
+dimnames(TP4.status.site) <- list(Quiesced = c("No", "Yes"),Site = c("BC1", "FTL4", "T328"))
+
+fisher_test(TP4.status.site)
+
+#TP5
+TP5 %>% count(Site, Current.Health.Status)
+TP5.status.site <- as.table(rbind(c(10, 3, 11), c(6, 1, 1)))
+dimnames(TP5.status.site) <- list(Quiesced = c("No", "Yes"),Site = c("BC1", "FTL4", "T328"))
+
+fisher_test(TP5.status.site)
+
+#TP6
+TP6 %>% count(Site, Current.Health.Status)
+TP6.status.site <- as.table(rbind(c(6, 3, 9), c(10, 1, 3)))
+dimnames(TP6.status.site) <- list(Quiesced = c("No", "Yes"),Site = c("BC1", "FTL4", "T328"))
+
+fisher_test(TP6.status.site)
+```
+
+No impact of site on status of colonies at any time point
+
+```{r, Fisher Test: influence of treatment on colony SCTLD status at each time point}
+
+#TP1
+TP1 %>% count(Treatment, Current.Health.Status)
+
+TP1.status.treat <- as.table(rbind(c(2, 10, 10), c(9, 1, 0)))
+dimnames(TP1.status.treat) <- list(Quiesced = c("No", "Yes"),Treatment = c("Amox", "Chlor", "Untr"))
+
+fisher_test(TP1.status.treat)
+
+pairwise_fisher_test(TP1.status.treat, p.adjust.method = "bonferroni")
+
+#TP2
+TP2 %>% count(Treatment, Current.Health.Status)
+
+TP2.status.treat <- as.table(rbind(c(3, 10, 10), c(8, 1, 0)))
+dimnames(TP2.status.treat) <- list(Quiesced = c("No", "Yes"),Treatment = c("Amox", "Chlor", "Untr"))
+
+fisher_test(TP2.status.treat)
+
+pairwise_fisher_test(TP2.status.treat, p.adjust.method = "bonferroni")
+
+#TP3
+TP3 %>% count(Treatment, Current.Health.Status)
+
+TP3.status.treat <- as.table(rbind(c(4, 11, 10), c(7, 0, 0)))
+dimnames(TP3.status.treat) <- list(Quiesced = c("No", "Yes"),Treatment = c("Amox", "Chlor", "Untr"))
+
+fisher_test(TP3.status.treat)
+
+pairwise_fisher_test(TP3.status.treat, p.adjust.method = "bonferroni")
+
+#TP4
+TP4 %>% count(Treatment, Current.Health.Status)
+
+TP4.status.treat <- as.table(rbind(c(5, 11, 8), c(6, 0, 2)))
+dimnames(TP4.status.treat) <- list(Quiesced = c("No", "Yes"),Treatment = c("Amox", "Chlor", "Untr"))
+
+fisher_test(TP4.status.treat)
+
+pairwise_fisher_test(TP4.status.treat, p.adjust.method = "bonferroni")
+
+#TP5
+TP5 %>% count(Treatment, Current.Health.Status)
+
+TP5.status.treat <- as.table(rbind(c(6, 11, 7), c(5, 0, 3)))
+dimnames(TP5.status.treat) <- list(Quiesced = c("No", "Yes"),Treatment = c("Amox", "Chlor", "Untr"))
+
+fisher_test(TP5.status.treat)
+
+pairwise_fisher_test(TP5.status.treat, p.adjust.method = "bonferroni")
+
+#TP6
+TP6 %>% count(Treatment, Current.Health.Status)
+
+TP6.status.treat <- as.table(rbind(c(4, 8, 6), c(7, 3, 4)))
+dimnames(TP6.status.treat) <- list(Quiesced = c("No", "Yes"),Treatment = c("Amox", "Chlor", "Untr"))
+
+fisher_test(TP6.status.treat)
+```
+
+Treatment influenced colony SCTLD status significantly until the fifth follow-up event at 23 weeks. Until the third follow-up at 9 weeks, amoxicillin-treated colonies were more likely to be quiesced than chlorine-treated and untreated, by the fourth follow-up at 14 weeks amoxicillin-treated were more likely to be quiesced only when compared to chlorine-treated, and by 23 weeks, despite a significant global test, no pairwise comparisons between treatment groups were significant.
+
+```{r, Fisher Test: influence of treatment on initially treated SCTLD lesion status at 46 weeks}
+
+TP6 %>% group_by(Treatment) %>% tally(Initial.TP0.Lesions)
+TP6 %>% group_by(Treatment) %>% tally(TP0.Lesions.active)
+
+#making table for 3x2 Fisher test
+treated.lesions <- as.table(rbind(c(34, 1, 18), c(7, 21, 14)))
+dimnames(treated.lesions) <- list(Lesion.Quiesced = c("No", "Yes"),Treatment = c("Chlor", "Amox", "Untr"))
+
+#run test
+fisher_test(treated.lesions)
+
+#pairwise comparisons
+pairwise_fisher_test(treated.lesions, p.adjust.method = "bonferroni")
+```
+
+Significant impact of treatment on initially treated lesion status at 46 weeks
+Amoxicillin-treated more likely to be quiesced than chlorine and untreated, chlorine vs. untreated no difference
+
+```{r, Kruskal-Wallis: influence of initial number of lesions present on a colony SCTLD status at any time point}
+##NOTE: I saw chunk options ", Kruskal-Wallis: influence of initial number lesions present on a colony's SCTLD status at any time point" please go to https://yihui.org/knitr/options (it is likely that you forgot to quote "character" options)
+
+Intervention.Data.NoTP0 %>% group_by(Time.Point.Num) %>% kruskal_test(Current.Health.Status~Initial.TP0.Lesions)
+
+Amox.NoTP0 %>% group_by(Time.Point.Num) %>% kruskal_test(Current.Health.Status~Initial.TP0.Lesions)
+
+Chl.NoTP0 %>% group_by(Time.Point.Num) %>% kruskal_test(Current.Health.Status~Initial.TP0.Lesions)
+
+Untr.NoTP0 %>% group_by(Time.Point.Num) %>% kruskal_test(Current.Health.Status~Initial.TP0.Lesions)
+
+```
+
+No impact of initial lesions present on a colony on it's SCTLD status at any time point
+
+```{r, Fisher Test: difference in proportions of amoxicillin and chlorine treated colonies with tissue left between their trenched areas and initial disease margins at 46 weeks}
+
+#make table for 2x2 Fisher test
+trench.treat <- as.table(rbind(c(4, 17), c(10, 1)))
+dimnames(trench.treat) <- list(Tissue.Left = c("No", "Yes"),Treatment = c("Amox", "Chlor"))
+
+#run test
+fisher_test(trench.treat)
+```
+
+Amoxicillin-treated colonies more likely than chlorine-treated to have tissue remaining at 46 weeks between trenched area and initial disease margins
+
+```{r, Spearmans Rank Correlation, associations between time and the development of new lesions on a colony}
+
+#look at Spearman's correlation between time and new lesions excluding TP0
+##all treatments combined
+scatter.smooth(x=Intervention.Data.NoTP0$Days.Since.Intervention, y=Intervention.Data.NoTP0$New.Lesions, main="New lesions ~ Time")
+cor.test(Intervention.Data.NoTP0$New.Lesions, Intervention.Data.NoTP0$Days.Since.Intervention, method = "spearman")
+
+#amox only
+scatter.smooth(x=Amox.NoTP0$Days.Since.Intervention, y=Amox.NoTP0$New.Lesions, main="New lesions ~ Time")
+#chlorine only
+scatter.smooth(x=Chl.NoTP0$Days.Since.Intervention, y=Chl.NoTP0$New.Lesions, main="New lesions ~ Time")
+#untreated only
+scatter.smooth(x=Untr.NoTP0$Days.Since.Intervention, y=Untr.NoTP0$New.Lesions, main="New lesions ~ Time")
+
+#Spearman's correlations again by treatment groups
+Intervention.Data.NoTP0 %>% group_by(Treatment) %>% cor_test(New.Lesions, Days.Since.Intervention, method = "spearman")
+```
+
+No correlation between time and new lesions developed, even when blocked by treatment group
+
+```{r, Spearmans Rank Correlation, associations between time and total lesions present on a colony}
+
+#look at Spearman's correlation between time and total lesions excluding TP0
+##all treatments combined
+scatter.smooth(x=Intervention.Data.NoTP0$Days.Since.Intervention, y=Intervention.Data.NoTP0$Total.current.lesions, main="Total lesions ~ Time")
+cor.test(Intervention.Data.NoTP0$Total.current.lesions, Intervention.Data.NoTP0$Days.Since.Intervention, method = "spearman")
+
+#amox only
+scatter.smooth(x=Amox.NoTP0$Days.Since.Intervention, y=Amox.NoTP0$Total.current.lesions, main="Total lesions ~ Time")
+#chlorine only
+scatter.smooth(x=Chl.NoTP0$Days.Since.Intervention, y=Chl.NoTP0$Total.current.lesions, main="Total lesions ~ Time")
+#untreated only
+scatter.smooth(x=Untr.NoTP0$Days.Since.Intervention, y=Untr.NoTP0$Total.current.lesions, main="Total lesions ~ Time")
+
+#Spearman's correlations again by treatment groups
+Intervention.Data.NoTP0 %>% group_by(Treatment) %>% cor_test(Total.current.lesions, Days.Since.Intervention, method = "spearman")
+```
+
+No correlation between time and total lesions present, even when blocked by treatment group
+
+```{r, Spearmans Rank Correlation, associations between initial colony surface area and the initial number of SCTLD lesions present}
+
+#correlation
+scatter.smooth(x=Intervention.Data$Initial.Colony.Area, y=Intervention.Data$Initial.TP0.Lesions, main="initial lesions ~ size")
+cor.test(Intervention.Data$Initial.Colony.Area, Intervention.Data$Initial.TP0.Lesions, method = "spearman")
+
+#correlation without Colony 161
+scatter.smooth(x=Intervention.Data.No161$Initial.Colony.Area, y=Intervention.Data.No161$Initial.TP0.Lesions, main="initial lesions ~ surface area")
+cor.test(Intervention.Data.No161$Initial.Colony.Area, Intervention.Data.No161$Initial.TP0.Lesions, method = "spearman")
+
+```
+
+Significant positive correlation, slightly skewed by one outlier colony but still signficiant with outlier removed
+
+```{r, Spearmans Rank Correlation: associations between initial colony surface area and new lesions developed}
+
+scatter.smooth(x=TP6$Initial.Colony.Area, y=TP6$Cumulative.New.Lesions, main="Initial Area ~ New Lesions")
+cor.test(TP6$Initial.Colony.Area, TP6$Cumulative.New.Lesions, method = "spearman")
+
+```
