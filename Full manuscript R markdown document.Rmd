@@ -18,7 +18,13 @@ Naming conventions:
 Treatment groups
 "Chlorine" & "Chl" both refer to the chlorinated epoxy treatment. "Amoxicillin" & "Amox" refer to the Base 2B plus amoxicillin treatment. "Untreated" & "Untr" refer to the SCTLD-affected, untreated control group.
 Time points
-"TP0" refers to the initial experiment set up, with "Immediately before treatment" & "Pre" referring to the chlorine and amoxicillin treated colonies before treatment at experiment setup, and "Immediately after treatment" and "Post" referring to the chlorine and amoxicillin treated colonies right after treatment at experiment setup. Untreated controls were also included in this "Immediately after treatment" & "P
+"TP0" refers to the initial experiment set up, with "Immediately before treatment" & "Pre" referring to the chlorine and amoxicillin treated colonies before treatment at experiment setup, and "Immediately after treatment" and "Post" referring to the chlorine and amoxicillin treated colonies right after treatment at experiment setup. Untreated controls were also included in this "Immediately after treatment" & "Post" subset.
+"TP1" refers to the first follow-up event that occurred 3 weeks after initial interventions.
+"TP2" refers to the second follow-up event that occurred 5 weeks after initial interventions.
+"TP3" refers to the third follow-up event that occurred 9 weeks after initial interventions.
+"TP4" refers to the fourth follow-up event that occurred 14 weeks after initial interventions.
+"TP5" refers to the fifth follow-up event that occurred 23 weeks after initial interventions.
+"TP6" refers to the sixth follow-up event that occurred 46 weeks after initial interventions.
 
 Explain time points, length between them, dates, how I named them
 
